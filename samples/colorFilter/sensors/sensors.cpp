@@ -21,12 +21,12 @@ cv::Mat Sensors::getImage()
     mutex.lock();
 
     cv::Mat result = image.clone();
-    cv::resize(result, result, cv::Size(640, 480));
+    cv::resize(result, result, cv::Size(320, 240));
     cv::cvtColor(result, result, CV_RGB2BGR);
-//    cv::transpose(result, result);
-//    cv::flip(result, result, 1);
-//    cv::transpose(result, result);
-//    cv::flip(result, result, 1);
+    cv::transpose(result, result);
+    cv::flip(result, result, 1);
+    cv::transpose(result, result);
+    cv::flip(result, result, 1);
 
     mutex.unlock();
 

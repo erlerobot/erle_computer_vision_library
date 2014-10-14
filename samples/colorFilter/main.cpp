@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
 {
     QApplication a(argc, argv);
 
-    Sensors* sensors = new Sensors("/Users/ahcorde/Documents/QtProjects/colorFilter/camisataAzul.mp4");
+    Sensors* sensors = new Sensors("/Users/ahcorde/Desktop/Golpe.MP4");
     threadGUI* gui = new threadGUI(sensors);
     ThreadSensors* threadSensors = new ThreadSensors(sensors);
 

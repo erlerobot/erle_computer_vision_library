@@ -128,6 +128,29 @@ GUI::GUI(Sensors* sensors)
     connect(this, SIGNAL(signal_updateGUI()), this, SLOT(on_updateGUI_recieved()));
 
     show();
+
+    sliderH_max->setValue(3.8);
+    sliderH_min->setValue(3.2);
+    sliderS_max->setValue(1.0);
+    sliderS_min->setValue(0.5);
+    sliderV_max->setValue(255);
+    sliderV_min->setValue(140);
+
+    sliderR_max->setValue(0);
+    sliderR_min->setValue(0);
+    sliderB_max->setValue(255);
+    sliderB_min->setValue(0);
+    sliderG_max->setValue(255);
+    sliderG_min->setValue(0);
+
+    kalman_RGB = new Kalman2D();
+    kalman_HSV = new Kalman2D();
+
+    x_rgb=0;
+    y_rgb=0;
+    y_hsv=0;
+    x_hsv=0;
+
 }
 
 void GUI::updateThreadGUI()
@@ -179,6 +202,9 @@ void GUI::on_updateGUI_recieved()
                                sliderB_max->value(),
                                sliderB_min->value());
 
+
+    ColorFilter::blobDetection(frame_filtered_hsv, kalman_HSV, x_hsv, y_hsv);
+    ColorFilter::blobDetection(frame_filtered_rgb, kalman_RGB, x_rgb, y_rgb);
 
     hsv_image_temp = ColorFilter::drawcheese(hsv_image_temp,
                                              sliderH_max->value(),
@@ -232,15 +258,12 @@ void GUI::on_updateGUI_recieved()
 
 void GUI::mousePressEvent(QMouseEvent *event)
 {
-    std::cout << "Click!" <<std::endl;
     QPoint p = labelImage->mapFromParent(QPoint(event->x(), event->y() ));
 
     if(p.x()>0 && p.x()<frame.cols && p.y()>0 && p.y()<frame.rows ){
-        std::cout << "Click ok!" <<std::endl;
 
         mutex.lock();
         if(frame.data!=0){
-            std::cout << "Click mutex!" <<std::endl;
 
             int indice = frame.step*p.y()+frame.channels()*p.x();
             int r =frame.data[indice];

@@ -4,6 +4,7 @@
 #include <QtGui>
 #include "../sensors/sensors.h"
 #include "../ComputerVision/colorfilter.h"
+#include "../ComputerVision/kalman2d.h"
 #include <QSlider>
 
 #include <QtWidgets>
@@ -72,6 +73,14 @@ private:
     cv::Mat frame_filtered_rgb;
     cv::Mat hsv_image;
     QMutex mutex;
+
+    Kalman2D* kalman_RGB;
+    Kalman2D* kalman_HSV;
+    float x_rgb;
+    float y_rgb;
+
+    float x_hsv;
+    float y_hsv;
 
 signals:
     void signal_updateGUI();

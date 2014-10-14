@@ -295,8 +295,8 @@ void ColorFilter::filterHSV_RGB(cv::Mat& frame, cv::Mat& rgb_filtered, cv::Mat& 
             rgb_image.data[indice_hsv+2]=255;
 
             bool condR = (r_aux <= rmax) & ( r_aux  >= rmin);
-            bool condG = (b_aux <= gmax) & (b_aux  >= gmin);
-            bool condB = (g_aux<= bmax) & (g_aux >= bmin);
+            bool condG = (g_aux <= gmax) & (g_aux  >= gmin);
+            bool condB = (b_aux<= bmax) & (b_aux >= bmin);
             if(condR & condG & condB){
                 rgb_filtered.data[indice]   = frame.data[indice];
                 rgb_filtered.data[indice+1] = frame.data[indice+1];
@@ -456,6 +456,70 @@ cv::Mat ColorFilter::drawcheese(cv::Mat& hsv_image, double sliderH_max, double s
     return hsv_image_temp;
 }
 
+void ColorFilter::blobDetection(cv::Mat &frame_filtered, Kalman2D *kalman, float &x, float &y)
+{
+    std::vector<std::vector<cv::Point> > contours;
+    std::vector<cv::Vec4i> hierarchy;
+    int thresh = 50;
+    cv::Mat threshold_output;
 
+    cv::Mat frame_filtered_gray;
+    cv::cvtColor(frame_filtered, frame_filtered_gray, CV_RGB2GRAY);
+    cv::threshold( frame_filtered_gray, threshold_output, thresh, 255, cv::THRESH_BINARY );
+    int erosion_size = 6;
+    cv::Mat element = cv::getStructuringElement(cv::MORPH_CROSS,
+                  cv::Size(2 * erosion_size + 1, 2 * erosion_size + 1),
+                  cv::Point(erosion_size, erosion_size) );
+    cv::dilate(threshold_output, threshold_output, element);
+    cv::findContours( threshold_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0) );
+
+    /// Approximate contours to polygons + get bounding rects and circles
+    std::vector<std::vector<cv::Point> > contours_poly( contours.size() );
+    std::vector<cv::Rect> boundRect;
+    std::vector<cv::Point2f>center( 1 );
+    std::vector<float>radius( 1 );
+
+    for( int i = 0; i < contours.size(); i++ ){
+        cv::approxPolyDP( cv::Mat(contours[i]), contours_poly[i], 3, true );
+    }
+
+    int maximo = 0;
+    int indice_maximo = 0;
+    for(int i= 0; i < contours_poly.size(); i++ ){
+        double area0 = cv::contourArea(contours_poly[i]);
+        if(area0>maximo){
+            maximo = area0;
+            indice_maximo = i;
+        }
+    }
+
+    int dt = 1;
+    if(contours_poly.size()>0){
+        boundRect.push_back(boundingRect( cv::Mat(contours_poly[indice_maximo]) ) );
+        cv::minEnclosingCircle( (cv::Mat)contours_poly[indice_maximo], center[0], radius[0] );
+
+        float x_act = boundRect[0].x +  boundRect[0].width/2;
+        float y_act = boundRect[0].y +  boundRect[0].height/2;
+
+        float vx = (x_act-x)/dt;
+        float vy = (y_act-y)/dt;
+
+        kalman->predict(x_act, y_act, vx, vy);
+        kalman->correct();
+
+        x = x_act;
+        y = y_act;
+    }
+
+    /// Draw polygonal contour + bonding rects + circles
+    for( int i = 0; i< boundRect.size(); i++ ){
+           cv::Scalar color = cv::Scalar( 255, 0, 0 );
+//           cv::drawContours( frame_filtered, contours_poly, i, color, 1, 8, std::vector<cv::Vec4i>(), 0, cv::Point() );
+           cv::rectangle( frame_filtered, boundRect[i].tl(), boundRect[i].br(), color, 2, 8, 0 );
+           cv::circle( frame_filtered, center[i], (int)radius[i], color, 2, 8, 0 );
+    }
+    cv::rectangle( frame_filtered, cv::Rect(kalman->get_x_predict()-33/2, kalman->get_y_predict()-33/2, 33, 35),
+                   cv::Scalar(0, 0, 255), 2, 8, 0 );
+}
 
 
